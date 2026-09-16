@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@xyflow/svelte':
-        specifier: ^1.0.0
+        specifier: ^1.4.2
         version: 1.4.2(svelte@5.43.10)
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
