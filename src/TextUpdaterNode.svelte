@@ -5,14 +5,25 @@
 		useSvelteFlow,
 		type NodeProps,
 	} from "@xyflow/svelte";
+	import { dialogueConfig } from "./dialogueConfig";
 
 	let { id, data }: NodeProps = $props();
-	const { updateNodeData } = useSvelteFlow();
+	const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
 
 	const maxChoices = 5;
 
 	function getChoices() {
 		return Array.isArray(data?.choices) ? data.choices : [];
+	}
+
+	function getDefinitions(kind: "traits" | "conditions", current: string) {
+		const configured =
+			kind === "traits"
+				? $dialogueConfig.traitDefinitions
+				: $dialogueConfig.conditionDefinitions;
+		return current && !configured.includes(current)
+			? [current, ...configured]
+			: configured;
 	}
 
 	// push a full node update (merges name/text/choices keeping other data as-is)
@@ -25,13 +36,27 @@
 		if (choices.length >= maxChoices) return;
 		const newChoices = [
 			...choices,
-			{ text: "", next: "", traits: [], conditions: [] },
+			{
+				id: `choice-${id}-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`,
+				text: "",
+				next: "",
+				traits: [],
+				conditions: [],
+			},
 		];
 		pushUpdate({ choices: newChoices });
 	}
 
-	function removeChoice(idx: number) {
+	async function removeChoice(idx: number) {
 		const choices = getChoices();
+		const choice = choices[idx];
+		if (choice?.id) {
+			const connectedEdges = getEdges().filter(
+				(edge) => edge.source === id && edge.sourceHandle === choice.id,
+			);
+			if (connectedEdges.length)
+				await deleteElements({ edges: connectedEdges });
+		}
 		const newChoices = choices.filter((_, i) => i !== idx);
 		pushUpdate({ choices: newChoices });
 	}
@@ -42,6 +67,25 @@
 			i === idx ? { ...c, [key]: value } : c,
 		);
 		pushUpdate({ choices: copy });
+	}
+
+	function toggleChoiceMetadata(
+		choiceIdx: number,
+		kind: "traits" | "conditions",
+		enabled: boolean,
+	) {
+		const choices = getChoices();
+		const choice = choices[choiceIdx];
+		if (!choice) return;
+		const current = Array.isArray(choice[kind]) ? choice[kind] : [];
+		const value = enabled
+			? current.length > 0
+				? current
+				: kind === "traits"
+					? [{ name: "", amount: 1 }]
+					: [""]
+			: [];
+		updateChoiceField(choiceIdx, kind, value);
 	}
 
 	function addTrait(choiceIdx: number) {
@@ -95,7 +139,11 @@
 		const newConds = (c.conditions ?? []).filter((_, i) => i !== condIdx);
 		updateChoiceField(choiceIdx, "conditions", newConds);
 	}
-	function updateCondition(choiceIdx: number, condIdx: number, value: string) {
+	function updateCondition(
+		choiceIdx: number,
+		condIdx: number,
+		value: string,
+	) {
 		const choices = getChoices();
 		const c = choices[choiceIdx];
 		if (!c) return;
@@ -105,10 +153,6 @@
 		updateChoiceField(choiceIdx, "conditions", newConds);
 	}
 
-	/* Node-level fields */
-	function updateNodeName(name: string) {
-		pushUpdate({ name });
-	}
 	function updateNodeText(t: string) {
 		pushUpdate({ text: t });
 	}
@@ -116,22 +160,12 @@
 
 <div class="node-card" style="resize: both; overflow: auto;">
 	<div class="field">
-		<label for="id">Node Name:</label>
-		<input
-			type="text"
-			value={data?.name ?? id}
-			oninput={(e) => updateNodeName((e.target as HTMLInputElement).value)}
-			placeholder="e.g. start"
-		/>
-	</div>
-
-	<div class="field">
-		<label for="id">NPC Text:</label>
 		<textarea
 			class="text-input"
 			rows="3"
-			oninput={(e) => updateNodeText((e.target as HTMLTextAreaElement).value)}
-			placeholder="What the NPC says...">{data?.text ?? ""}</textarea
+			oninput={(e) =>
+				updateNodeText((e.target as HTMLTextAreaElement).value)}
+			placeholder="The NPC says...">{data?.text ?? ""}</textarea
 		>
 	</div>
 
@@ -141,91 +175,145 @@
 		{#each getChoices() as choice, i (i)}
 			<div class="choice-block">
 				<div class="choice-main">
-					<input
-						type="text"
+					<textarea
+						class="choice-text"
+						rows="1"
 						placeholder="Player line..."
 						value={choice.text}
 						oninput={(e) =>
 							updateChoiceField(
 								i,
 								"text",
-								(e.target as HTMLInputElement).value,
+								(e.target as HTMLTextAreaElement).value,
 							)}
-					/>
-					<input
-						type="text"
-						placeholder="Next node..."
-						value={choice.next}
-						oninput={(e) =>
-							updateChoiceField(
-								i,
-								"next",
-								(e.target as HTMLInputElement).value,
-							)}
-					/>
-					<button class="remove-btn" onclick={() => removeChoice(i)}>✗</button>
-				</div>
-
-				<div class="sub-section">
-					<label for="id">Traits:</label>
-					{#each choice.traits ?? [] as trait, ti (ti)}
-						<div class="trait-row">
-							<input
-								type="text"
-								placeholder="Trait name"
-								value={trait.name}
-								oninput={(e) =>
-									updateTrait(
-										i,
-										ti,
-										"name",
-										(e.target as HTMLInputElement).value,
-									)}
-							/>
-							<input
-								type="number"
-								min="1"
-								placeholder="Amt"
-								value={trait.amount ?? 1}
-								oninput={(e) =>
-									updateTrait(
-										i,
-										ti,
-										"amount",
-										Number((e.target as HTMLInputElement).value),
-									)}
-								style="width: 4rem"
-							/>
-							<button class="mini-btn" onclick={() => removeTrait(i, ti)}
-								>x</button
-							>
-						</div>
-					{/each}
-					<button class="mini-btn add-mini" onclick={() => addTrait(i)}
-						>+ Add Trait</button
+					></textarea>
+					<button class="remove-btn" onclick={() => removeChoice(i)}
+						>✗</button
 					>
+					<label class="metadata-toggle">
+						<input
+							type="checkbox"
+							checked={(choice.traits ?? []).length > 0}
+							onchange={(e) =>
+								toggleChoiceMetadata(
+									i,
+									"traits",
+									(e.target as HTMLInputElement).checked,
+								)}
+						/>
+						Traits
+					</label>
+					<label class="metadata-toggle">
+						<input
+							type="checkbox"
+							checked={(choice.conditions ?? []).length > 0}
+							onchange={(e) =>
+								toggleChoiceMetadata(
+									i,
+									"conditions",
+									(e.target as HTMLInputElement).checked,
+								)}
+						/>
+						Conditions
+					</label>
 				</div>
+				<Handle
+					type="source"
+					id={choice.id ?? `choice-${id}-${i + 1}`}
+					position={Position.Right}
+					style="right: -7px;"
+				/>
 
-				<div class="sub-section">
-					<label for="id">Conditions:</label>
-					{#each choice.conditions ?? [] as cond, ci (ci)}
-						<div class="cond-row">
-							<input
-								type="text"
-								placeholder="Condition (e.g. has_key)"
-								value={cond}
-								oninput={(e) =>
-									updateCondition(i, ci, (e.target as HTMLInputElement).value)}
-							/>
-							<button class="mini-btn" onclick={() => removeCondition(i, ci)}
-								>×</button
-							>
-						</div>
-					{/each}
-					<button class="mini-btn add-mini" onclick={() => addCondition(i)}
-						>+ Add Condition</button
-					>
-				</div>
+				{#if (choice.traits ?? []).length > 0}
+					<div class="sub-section metadata-section">
+						<span class="subheading">Traits</span>
+						{#each choice.traits ?? [] as trait, ti (ti)}
+							<div class="trait-row">
+								<select
+									value={trait.name}
+									onchange={(e) =>
+										updateTrait(
+											i,
+											ti,
+											"name",
+											(e.target as HTMLSelectElement)
+												.value,
+										)}
+								>
+									<option value="">Select trait...</option>
+									{#each getDefinitions("traits", trait.name) as traitName}
+										<option value={traitName}
+											>{traitName}</option
+										>
+									{/each}
+								</select>
+								<input
+									type="number"
+									min="1"
+									placeholder="Amt"
+									value={trait.amount ?? 1}
+									oninput={(e) =>
+										updateTrait(
+											i,
+											ti,
+											"amount",
+											Number(
+												(e.target as HTMLInputElement)
+													.value,
+											),
+										)}
+									style="width: 4rem"
+								/>
+								<button
+									class="mini-btn"
+									onclick={() => removeTrait(i, ti)}>x</button
+								>
+							</div>
+						{/each}
+						<button
+							class="mini-btn add-mini"
+							onclick={() => addTrait(i)}>+ Add Trait</button
+						>
+					</div>
+				{/if}
+
+				{#if (choice.conditions ?? []).length > 0}
+					<div class="sub-section metadata-section">
+						<span class="subheading">Conditions</span>
+						{#each choice.conditions ?? [] as cond, ci (ci)}
+							<div class="cond-row">
+								<select
+									value={cond}
+									onchange={(e) =>
+										updateCondition(
+											i,
+											ci,
+											(e.target as HTMLSelectElement)
+												.value,
+										)}
+								>
+									<option value="">Select condition...</option
+									>
+									{#each getDefinitions("conditions", cond) as conditionName}
+										<option value={conditionName}
+											>{conditionName}</option
+										>
+									{/each}
+								</select>
+								<button
+									class="mini-btn"
+									onclick={() => removeCondition(i, ci)}
+									>×</button
+								>
+							</div>
+						{/each}
+						<button
+							class="mini-btn add-mini"
+							onclick={() => addCondition(i)}
+							>+ Add Condition</button
+						>
+					</div>
+				{/if}
 			</div>
 		{/each}
 
@@ -234,8 +322,7 @@
 		{/if}
 	</div>
 
-	<Handle type="target" position={Position.Top} />
-	<Handle type="source" position={Position.Bottom} />
+	<Handle type="target" position={Position.Left} />
 </div>
 
 <style>
@@ -262,7 +349,8 @@
 		color: #41d992;
 	}
 	input,
-	textarea {
+	textarea,
+	select {
 		width: 100%;
 		background: black;
 		color: white;
@@ -273,11 +361,19 @@
 		font-size: 0.67rem;
 		box-sizing: border-box;
 	}
+	select {
+		appearance: auto;
+	}
+	.choice-text {
+		resize: vertical;
+		min-height: 2.2rem;
+	}
 	.text-input {
 		resize: vertical;
 		min-height: 60px;
 	}
 	.choice-block {
+		position: relative;
 		border: 1px solid #333;
 		border-radius: 6px;
 		padding: 0.4rem;
@@ -286,10 +382,25 @@
 	}
 	.choice-main {
 		display: grid;
-		grid-template-columns: 1fr 0.6fr auto;
+		grid-template-columns: minmax(8rem, 1fr) minmax(5rem, 0.6fr) auto auto auto;
 		gap: 0.25rem;
 		align-items: center;
 		margin-bottom: 0.25rem;
+	}
+	.metadata-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		white-space: nowrap;
+		font-size: 0.58rem;
+		font-weight: 400;
+		color: #999;
+		cursor: pointer;
+	}
+	.metadata-toggle input {
+		width: auto;
+		margin: 0;
+		accent-color: #41d992;
 	}
 	.sub-section {
 		border-left: 1px solid #333;
@@ -300,6 +411,11 @@
 		flex-direction: column;
 		gap: 0.25rem;
 	}
+	.subheading {
+		font-size: 0.58rem;
+		font-weight: 500;
+		color: #888;
+	}
 	.trait-row,
 	.cond-row {
 		display: flex;
@@ -308,8 +424,8 @@
 	}
 	.add-btn,
 	.mini-btn {
-		background: #111;
-		color: #f0f0f0;
+		background: #151515;
+		color: #999;
 		border: none;
 		border-radius: 4px;
 		cursor: pointer;
@@ -318,7 +434,11 @@
 	}
 	.add-btn:hover,
 	.add-mini:hover {
-		background: #333;
+		background: #252525;
+		color: #c8c8c8;
+	}
+	.add-btn {
+		font-size: 0.62rem;
 	}
 	.remove-btn {
 		color: #b00;
