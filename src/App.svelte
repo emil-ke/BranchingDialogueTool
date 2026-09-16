@@ -20,6 +20,50 @@
 	let configOpen = false;
 	let traitDefinitions: string[] = [];
 	let conditionDefinitions: string[] = [];
+	type GraphSnapshot = { nodes: Node[]; edges: Edge[] };
+	let undoStack: GraphSnapshot[] = [];
+	let redoStack: GraphSnapshot[] = [];
+	let restoringHistory = false;
+
+	function cloneGraph<T>(value: T): T {
+		return JSON.parse(JSON.stringify(value));
+	}
+
+	function snapshotGraph(): GraphSnapshot {
+		return { nodes: cloneGraph(nodes), edges: cloneGraph(edges) };
+	}
+
+	function recordHistory() {
+		if (restoringHistory) return;
+		undoStack = [...undoStack, snapshotGraph()];
+		redoStack = [];
+	}
+
+	function restoreSnapshot(snapshot: GraphSnapshot) {
+		nodes = cloneGraph(snapshot.nodes);
+		edges = cloneGraph(snapshot.edges);
+		recomputeCounter();
+	}
+
+	function undo() {
+		const previous = undoStack.at(-1);
+		if (!previous) return;
+		restoringHistory = true;
+		redoStack = [...redoStack, snapshotGraph()];
+		undoStack = undoStack.slice(0, -1);
+		restoreSnapshot(previous);
+		restoringHistory = false;
+	}
+
+	function redo() {
+		const next = redoStack.at(-1);
+		if (!next) return;
+		restoringHistory = true;
+		undoStack = [...undoStack, snapshotGraph()];
+		redoStack = redoStack.slice(0, -1);
+		restoreSnapshot(next);
+		restoringHistory = false;
+	}
 
 	function syncDialogueConfig() {
 		dialogueConfig.set({ traitDefinitions, conditionDefinitions });
@@ -211,14 +255,24 @@
 			return;
 		}
 
-		// ignore key events if the user is typing in an input or textarea
 		const target = e.target as HTMLElement;
-		if (
+		const isEditing =
 			target &&
 			(target.tagName === "INPUT" ||
 				target.tagName === "TEXTAREA" ||
-				target.isContentEditable)
-		) {
+				target.isContentEditable);
+		const modifierPressed = e.ctrlKey || e.metaKey;
+
+		if (modifierPressed && e.key.toLowerCase() === "z") {
+			if (isEditing) return;
+			e.preventDefault();
+			if (e.shiftKey) redo();
+			else undo();
+			return;
+		}
+
+		// Leave regular typing and native text undo/redo to the focused control.
+		if (isEditing) {
 			return;
 		}
 
@@ -245,6 +299,7 @@
 	}
 
 	function addNode() {
+		recordHistory();
 		const rightmostX = nodes.reduce(
 			(maxX, node) => Math.max(maxX, node.position.x),
 			0,
@@ -261,6 +316,7 @@
 			!connection.sourceHandle
 		)
 			return;
+		recordHistory();
 		// always reassign edges (avoid .push)
 		const newEdge: Edge = {
 			id: `${connection.source}-${connection.sourceHandle}-${connection.target}`,
@@ -286,6 +342,7 @@
 
 		const source = String(state.fromNode.id);
 		const sourceHandle = String(state.fromHandle.id);
+		recordHistory();
 		const newNode = createNode({ x: state.to.x, y: state.to.y });
 		nodes = [...nodes, newNode];
 		edges = [
@@ -303,6 +360,11 @@
 				sourceHandle,
 			},
 		];
+	}
+
+	function onBeforeDelete() {
+		recordHistory();
+		return true;
 	}
 
 	function downloadJson(filename: string, value: unknown) {
@@ -440,6 +502,7 @@
 				alert("JSON missing 'nodes' object");
 				return;
 			}
+			recordHistory();
 			// wipie wipe
 			nodes = [];
 			edges = [];
@@ -530,6 +593,7 @@
 		}
 	}
 	function doWipe() {
+		recordHistory();
 		localStorage.removeItem("dialogue_autosave");
 		nodeCounter = 0;
 		nodes = [
@@ -562,17 +626,17 @@
 		<button
 			onclick={exportDialogue}
 			class="top_btn"
-			style="background: #10b981;">Export JSON</button
+			style="background: #357560;">Export JSON</button
 		>
 		<button
 			onclick={importDialogue}
 			class="top_btn"
-			style="background: #f59e0b;">Import JSON</button
+			style="background: #b89252;">Import JSON</button
 		>
 		<button
 			onclick={confirmWipe}
 			class="top_btn"
-			style="background: #ef4444;">New Dialogue</button
+			style="background: #c22c2c;">New Dialogue</button
 		>
 	</div>
 
@@ -696,6 +760,7 @@
 		{nodeTypes}
 		onconnect={onConnect}
 		onconnectend={onConnectEnd}
+		onbeforedelete={onBeforeDelete}
 		deleteKey={["Backspace", "Delete"]}
 		fitView
 	>
@@ -725,7 +790,7 @@
 		margin-right: 0.5rem;
 	}
 	.config_btn {
-		background: #8b5cf6;
+		background: #347ead;
 	}
 	.config-backdrop {
 		position: absolute;

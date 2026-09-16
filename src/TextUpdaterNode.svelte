@@ -2,12 +2,13 @@
 	import {
 		Position,
 		Handle,
+		NodeResizer,
 		useSvelteFlow,
 		type NodeProps,
 	} from "@xyflow/svelte";
 	import { dialogueConfig } from "./dialogueConfig";
 
-	let { id, data }: NodeProps = $props();
+	let { id, data, selected }: NodeProps = $props();
 	const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
 
 	const maxChoices = 5;
@@ -158,10 +159,18 @@
 	}
 </script>
 
-<div class="node-card" style="resize: both; overflow: auto;">
+<NodeResizer
+	isVisible={selected}
+	minWidth={280}
+	minHeight={180}
+	color="rgba(120, 160, 145, 0.45)"
+	handleStyle="width: 7px; height: 7px; opacity: 0.6;"
+/>
+
+<div class="node-card">
 	<div class="field">
 		<textarea
-			class="text-input"
+			class="text-input nodrag"
 			rows="3"
 			oninput={(e) =>
 				updateNodeText((e.target as HTMLTextAreaElement).value)}
@@ -170,13 +179,13 @@
 	</div>
 
 	<div class="field">
-		<label for="id">Choices:</label>
+		<label for="id">CHOICES</label>
 
 		{#each getChoices() as choice, i (i)}
 			<div class="choice-block">
 				<div class="choice-main">
 					<textarea
-						class="choice-text"
+						class="choice-text nodrag"
 						rows="1"
 						placeholder="Player line..."
 						value={choice.text}
@@ -187,11 +196,13 @@
 								(e.target as HTMLTextAreaElement).value,
 							)}
 					></textarea>
-					<button class="remove-btn" onclick={() => removeChoice(i)}
-						>✗</button
+					<button
+						class="remove-btn nodrag"
+						onclick={() => removeChoice(i)}>✗</button
 					>
 					<label class="metadata-toggle">
 						<input
+							class="nodrag"
 							type="checkbox"
 							checked={(choice.traits ?? []).length > 0}
 							onchange={(e) =>
@@ -205,6 +216,7 @@
 					</label>
 					<label class="metadata-toggle">
 						<input
+							class="nodrag"
 							type="checkbox"
 							checked={(choice.conditions ?? []).length > 0}
 							onchange={(e) =>
@@ -230,6 +242,7 @@
 						{#each choice.traits ?? [] as trait, ti (ti)}
 							<div class="trait-row">
 								<select
+									class="nodrag"
 									value={trait.name}
 									onchange={(e) =>
 										updateTrait(
@@ -248,6 +261,7 @@
 									{/each}
 								</select>
 								<input
+									class="nodrag"
 									type="number"
 									min="1"
 									placeholder="Amt"
@@ -265,13 +279,13 @@
 									style="width: 4rem"
 								/>
 								<button
-									class="mini-btn"
+									class="mini-btn nodrag"
 									onclick={() => removeTrait(i, ti)}>x</button
 								>
 							</div>
 						{/each}
 						<button
-							class="mini-btn add-mini"
+							class="mini-btn add-mini nodrag"
 							onclick={() => addTrait(i)}>+ Add Trait</button
 						>
 					</div>
@@ -283,6 +297,7 @@
 						{#each choice.conditions ?? [] as cond, ci (ci)}
 							<div class="cond-row">
 								<select
+									class="nodrag"
 									value={cond}
 									onchange={(e) =>
 										updateCondition(
@@ -301,14 +316,14 @@
 									{/each}
 								</select>
 								<button
-									class="mini-btn"
+									class="mini-btn nodrag"
 									onclick={() => removeCondition(i, ci)}
 									>×</button
 								>
 							</div>
 						{/each}
 						<button
-							class="mini-btn add-mini"
+							class="mini-btn add-mini nodrag"
 							onclick={() => addCondition(i)}
 							>+ Add Condition</button
 						>
@@ -318,7 +333,9 @@
 		{/each}
 
 		{#if getChoices().length < maxChoices}
-			<button class="add-btn" onclick={addChoice}>+ Add Choice</button>
+			<button class="add-btn nodrag" onclick={addChoice}
+				>+ Add Choice</button
+			>
 		{/if}
 	</div>
 
@@ -327,12 +344,16 @@
 
 <style>
 	.node-card {
-		background: black;
+		width: 100%;
+		height: 100%;
+		box-sizing: border-box;
+		overflow: auto;
+		background: rgb(15, 12, 19);
 		color: #f0f0f0;
-		border: 1px solid #174f35;
-		border-radius: 8px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 4px;
 		padding: 0.75rem;
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24);
 		min-width: 280px;
 		display: flex;
 		flex-direction: column;
@@ -344,9 +365,9 @@
 		gap: 0.25rem;
 	}
 	label {
-		font-size: 0.7rem;
+		font-size: 0.6rem;
 		font-weight: 600;
-		color: #41d992;
+		color: #64644d;
 	}
 	input,
 	textarea,
@@ -354,7 +375,7 @@
 		width: 100%;
 		background: black;
 		color: white;
-		border: 1px solid #333;
+		border: 1px solid rgba(255, 255, 255, 0.1);
 		border-radius: 6px;
 		padding: 0.4rem;
 		font-family: inherit;
@@ -374,11 +395,11 @@
 	}
 	.choice-block {
 		position: relative;
-		border: 1px solid #333;
+		border: 1px solid rgba(255, 255, 255, 0.08);
 		border-radius: 6px;
 		padding: 0.4rem;
 		margin-bottom: 0.5rem;
-		background: black;
+		background: rgba(0, 0, 0, 0.18);
 	}
 	.choice-main {
 		display: grid;
@@ -403,7 +424,7 @@
 		accent-color: #41d992;
 	}
 	.sub-section {
-		border-left: 1px solid #333;
+		border-left: 1px solid rgba(255, 255, 255, 0.08);
 		margin-left: 0.5rem;
 		padding-left: 0.5rem;
 		margin-top: 0.25rem;
