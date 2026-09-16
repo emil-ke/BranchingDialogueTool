@@ -9,21 +9,21 @@ importers:
   .:
     dependencies:
       '@xyflow/svelte':
-        specifier: ^1.0.0
-        version: 1.4.1(svelte@5.43.5)
+        specifier: ^1.4.2
+        version: 1.4.2(svelte@5.43.10)
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^5.0.3
-        version: 5.1.1(svelte@5.43.5)(vite@6.4.1)
+        version: 5.1.1(svelte@5.43.10)(vite@6.4.1)
       '@tsconfig/svelte':
         specifier: ^5.0.5
-        version: 5.0.5
+        version: 5.0.6
       svelte:
         specifier: ^5.28.6
-        version: 5.43.5
+        version: 5.43.10
       svelte-check:
         specifier: ^4.1.7
-        version: 4.3.3(picomatch@4.0.2)(svelte@5.43.5)(typescript@5.9.3)
+        version: 4.3.4(picomatch@4.0.2)(svelte@5.43.10)(typescript@5.9.3)
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
@@ -330,8 +330,8 @@ packages:
       svelte: ^5.0.0
       vite: ^6.0.0
 
-  '@tsconfig/svelte@5.0.5':
-    resolution: {integrity: sha512-48fAnUjKye38FvMiNOj0J9I/4XlQQiZlpe9xaNPfe8vy2Y1hFBt8g1yqf2EGjVvHavo4jf2lC+TQyENCr4BJBQ==}
+  '@tsconfig/svelte@5.0.6':
+    resolution: {integrity: sha512-yGxYL0I9eETH1/DR9qVJey4DAsCdeau4a9wYPKuXfEhm8lFO8wg+LLYJjIpAm6Fw7HSlhepPhYPDop75485yWQ==}
 
   '@types/d3-color@3.1.3':
     resolution: {integrity: sha512-iO90scth9WAbmgv7ogoq57O9YpKmFBbmoEoCHDB2xMBY0+/KVrqAaCDyCE16dUspeOvIxFFRI+0sEtqDqy2b4A==}
@@ -354,13 +354,13 @@ packages:
   '@types/estree@1.0.7':
     resolution: {integrity: sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==}
 
-  '@xyflow/svelte@1.4.1':
-    resolution: {integrity: sha512-CAegVmLMpX64G6JnhiU7ezoIOY7aX88cf1fSOV8FutKdZNMxcJBykhvaXunOBf7jjDs9X887RH8Jgdl1rMwXww==}
+  '@xyflow/svelte@1.4.2':
+    resolution: {integrity: sha512-E6mw8wt3NXS5imGJLWKrdOEOGHAkbFhsVwzb9MPG8ohkPjQ8lMeDM9o3fBSoDNp7xr16s7Q3AOVS2JzVyoY2og==}
     peerDependencies:
       svelte: ^5.25.0
 
-  '@xyflow/system@0.0.72':
-    resolution: {integrity: sha512-WBI5Aau0fXTXwxHPzceLNS6QdXggSWnGjDtj/gG669crApN8+SCmEtkBth1m7r6pStNo/5fI9McEi7Dk0ymCLA==}
+  '@xyflow/system@0.0.73':
+    resolution: {integrity: sha512-C2ymH2V4mYDkdVSiRx0D7R0s3dvfXiupVBcko6tXP5K4tVdSBMo22/e3V9yRNdn+2HQFv44RFKzwOyCcUUDAVQ==}
 
   acorn@8.14.1:
     resolution: {integrity: sha512-OvQ/2pUDKmgfCg++xsTX1wGxfTaszcHVcTctW4UJB4hibJx2HXxxO5UmVgyjMa+ZDsiaf5wWLXYpRWMmBI0QHg==}
@@ -519,16 +519,16 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
-  svelte-check@4.3.3:
-    resolution: {integrity: sha512-RYP0bEwenDXzfv0P1sKAwjZSlaRyqBn0Fz1TVni58lqyEiqgwztTpmodJrGzP6ZT2aHl4MbTvWP6gbmQ3FOnBg==}
+  svelte-check@4.3.4:
+    resolution: {integrity: sha512-DVWvxhBrDsd+0hHWKfjP99lsSXASeOhHJYyuKOFYJcP7ThfSCKgjVarE8XfuMWpS5JV3AlDf+iK1YGGo2TACdw==}
     engines: {node: '>= 18.0.0'}
     hasBin: true
     peerDependencies:
       svelte: ^4.0.0 || ^5.0.0-next.0
       typescript: '>=5.0.0'
 
-  svelte@5.43.5:
-    resolution: {integrity: sha512-HQoZArIewxQVNedseDsgMgnRSC4XOXczxXLF9rOJaPIJkg58INOPUiL8aEtzqZIXNSZJyw8NmqObwg/voajiHQ==}
+  svelte@5.43.10:
+    resolution: {integrity: sha512-7mkxF1xU+9VRowZA+6fY6qy2kVnS2U3gDtHV2V+aoqZaIagiXXuUR0WHzblw/GwQVXnTNXSvfh2/s5dNNv4AQw==}
     engines: {node: '>=18'}
 
   tinyglobby@0.2.13:
@@ -755,37 +755,37 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.40.0':
     optional: true
 
-  '@svelte-put/shortcut@4.1.0(svelte@5.43.5)':
+  '@svelte-put/shortcut@4.1.0(svelte@5.43.10)':
     dependencies:
-      svelte: 5.43.5
+      svelte: 5.43.10
 
   '@sveltejs/acorn-typescript@1.0.5(acorn@8.14.1)':
     dependencies:
       acorn: 8.14.1
 
-  '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.43.5)(vite@6.4.1))(svelte@5.43.5)(vite@6.4.1)':
+  '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.43.10)(vite@6.4.1))(svelte@5.43.10)(vite@6.4.1)':
     dependencies:
-      '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.43.5)(vite@6.4.1)
+      '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.43.10)(vite@6.4.1)
       debug: 4.4.3
-      svelte: 5.43.5
+      svelte: 5.43.10
       vite: 6.4.1
     transitivePeerDependencies:
       - supports-color
 
-  '@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.43.5)(vite@6.4.1)':
+  '@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.43.10)(vite@6.4.1)':
     dependencies:
-      '@sveltejs/vite-plugin-svelte-inspector': 4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.43.5)(vite@6.4.1))(svelte@5.43.5)(vite@6.4.1)
+      '@sveltejs/vite-plugin-svelte-inspector': 4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.43.10)(vite@6.4.1))(svelte@5.43.10)(vite@6.4.1)
       debug: 4.4.3
       deepmerge: 4.3.1
       kleur: 4.1.5
       magic-string: 0.30.17
-      svelte: 5.43.5
+      svelte: 5.43.10
       vite: 6.4.1
       vitefu: 1.0.6(vite@6.4.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@tsconfig/svelte@5.0.5': {}
+  '@tsconfig/svelte@5.0.6': {}
 
   '@types/d3-color@3.1.3': {}
 
@@ -810,13 +810,13 @@ snapshots:
 
   '@types/estree@1.0.7': {}
 
-  '@xyflow/svelte@1.4.1(svelte@5.43.5)':
+  '@xyflow/svelte@1.4.2(svelte@5.43.10)':
     dependencies:
-      '@svelte-put/shortcut': 4.1.0(svelte@5.43.5)
-      '@xyflow/system': 0.0.72
-      svelte: 5.43.5
+      '@svelte-put/shortcut': 4.1.0(svelte@5.43.10)
+      '@xyflow/system': 0.0.73
+      svelte: 5.43.10
 
-  '@xyflow/system@0.0.72':
+  '@xyflow/system@0.0.73':
     dependencies:
       '@types/d3-drag': 3.0.7
       '@types/d3-interpolate': 3.0.4
@@ -989,19 +989,19 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
-  svelte-check@4.3.3(picomatch@4.0.2)(svelte@5.43.5)(typescript@5.9.3):
+  svelte-check@4.3.4(picomatch@4.0.2)(svelte@5.43.10)(typescript@5.9.3):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.25
       chokidar: 4.0.3
       fdir: 6.4.3(picomatch@4.0.2)
       picocolors: 1.1.1
       sade: 1.8.1
-      svelte: 5.43.5
+      svelte: 5.43.10
       typescript: 5.9.3
     transitivePeerDependencies:
       - picomatch
 
-  svelte@5.43.5:
+  svelte@5.43.10:
     dependencies:
       '@jridgewell/remapping': 2.3.5
       '@jridgewell/sourcemap-codec': 1.5.0
