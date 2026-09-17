@@ -11,6 +11,7 @@
 	import { onMount } from "svelte";
 	import "@xyflow/svelte/dist/style.css";
 	import TextUpdaterNode from "./TextUpdaterNode.svelte";
+	import FlowKeyboardShortcuts from "./FlowKeyboardShortcuts.svelte";
 	import { dialogueConfig } from "./dialogueConfig";
 
 	const nodeTypes = { textUpdater: TextUpdaterNode };
@@ -309,6 +310,25 @@
 		nodes = [...nodes, newNode];
 	}
 
+	function getPointerPosition(event: MouseEvent | TouchEvent) {
+		const pointer =
+			"changedTouches" in event ? event.changedTouches[0] : event;
+		const flow = document.querySelector<HTMLElement>(".svelte-flow");
+		const viewport = document.querySelector<HTMLElement>(
+			".svelte-flow__viewport",
+		);
+		if (!flow || !viewport || !pointer) return null;
+
+		const flowBounds = flow.getBoundingClientRect();
+		const transform = new DOMMatrixReadOnly(
+			getComputedStyle(viewport).transform,
+		);
+		return {
+			x: (pointer.clientX - flowBounds.left - transform.e) / transform.a,
+			y: (pointer.clientY - flowBounds.top - transform.f) / transform.d,
+		};
+	}
+
 	function onConnect(connection: Connection) {
 		if (
 			!connection.source ||
@@ -342,8 +362,14 @@
 
 		const source = String(state.fromNode.id);
 		const sourceHandle = String(state.fromHandle.id);
+		const newNodeGap = 40;
+		const newNodeMinHeight = 180;
+		const dropPosition = getPointerPosition(event) ?? state.to;
 		recordHistory();
-		const newNode = createNode({ x: state.to.x, y: state.to.y });
+		const newNode = createNode({
+			x: dropPosition.x + newNodeGap,
+			y: dropPosition.y - newNodeMinHeight / 2,
+		});
 		nodes = [...nodes, newNode];
 		edges = [
 			...edges.filter(
@@ -758,12 +784,16 @@
 		bind:nodes
 		bind:edges
 		{nodeTypes}
+		minZoom={0.1}
+		maxZoom={4}
+		connectionRadius={32}
 		onconnect={onConnect}
 		onconnectend={onConnectEnd}
 		onbeforedelete={onBeforeDelete}
-		deleteKey={["Backspace", "Delete"]}
+		deleteKey={["Backspace", "Delete", "x"]}
 		fitView
 	>
+		<FlowKeyboardShortcuts />
 		<Controls orientation="horizontal" />
 		<Background bgColor="#111" />
 		<MiniMap bgColor="#000" nodeColor="#333" maskColor="#222" />

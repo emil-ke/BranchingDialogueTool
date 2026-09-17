@@ -233,7 +233,8 @@
 					type="source"
 					id={choice.id ?? `choice-${id}-${i + 1}`}
 					position={Position.Right}
-					style="right: -7px;"
+					class="connection-handle"
+					style="right: -7px; width: 24px; height: 24px; background: transparent; border: 0;"
 				/>
 
 				{#if (choice.traits ?? []).length > 0}
@@ -339,7 +340,12 @@
 		{/if}
 	</div>
 
-	<Handle type="target" position={Position.Left} />
+	<Handle
+		type="target"
+		position={Position.Left}
+		class="connection-handle"
+		style="left: -3px; width: 24px; height: 24px; background: transparent; border: 0;"
+	/>
 </div>
 
 <style>
@@ -358,6 +364,18 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+	}
+	:global(.connection-handle)::after {
+		content: "";
+		position: absolute;
+		inset: 9px;
+		border-radius: 50%;
+		background: var(
+			--xy-handle-background-color,
+			var(--xy-handle-background-color-default)
+		);
+		border: 1px solid
+			var(--xy-handle-border-color, var(--xy-handle-border-color-default));
 	}
 	.field {
 		display: flex;
