@@ -283,6 +283,14 @@
 		}
 	}
 
+	function preventMiddleClickPaste(e: MouseEvent) {
+		if (e.button !== 1) return;
+		const target = e.target as Element | null;
+		if (target?.closest("input, textarea, [contenteditable='true']")) {
+			e.preventDefault();
+		}
+	}
+
 	function createNode(position: { x: number; y: number }) {
 		const id = getNextId();
 		return {
@@ -800,7 +808,11 @@
 	</SvelteFlow>
 </div>
 
-<svelte:window on:keydown={onKeyDown} />
+<svelte:window
+	on:keydown={onKeyDown}
+	on:mousedown={preventMiddleClickPaste}
+	on:auxclick={preventMiddleClickPaste}
+/>
 
 <style>
 	.btns {
