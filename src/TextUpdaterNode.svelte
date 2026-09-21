@@ -12,6 +12,18 @@
 	const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
 
 	const maxChoices = 5;
+	type ConditionalTextTarget = {
+		kind: "node" | "choice";
+		choiceIndex?: number;
+		start: number;
+		end: number;
+	};
+
+	let conditionalTextOpen = $state(false);
+	let conditionalTextTarget = $state<ConditionalTextTarget | null>(null);
+	let conditionalCondition = $state("");
+	let conditionalWhenTrue = $state("");
+	let conditionalWhenFalse = $state("");
 
 	function getChoices() {
 		return Array.isArray(data?.choices) ? data.choices : [];
@@ -157,6 +169,75 @@
 	function updateNodeText(t: string) {
 		pushUpdate({ text: t });
 	}
+
+	function handleTextKeydown(event: KeyboardEvent) {
+		if (event.key === "Escape" && conditionalTextOpen) {
+			conditionalTextOpen = false;
+			conditionalTextTarget = null;
+			(event.target as HTMLTextAreaElement).blur();
+			event.stopPropagation();
+			return;
+		}
+		if (event.key === "Escape") {
+			(event.target as HTMLTextAreaElement).blur();
+			event.stopPropagation();
+			return;
+		}
+		if (!(event.target instanceof HTMLTextAreaElement)) return;
+		if (
+			!event.altKey ||
+			!event.shiftKey ||
+			event.key.toLowerCase() !== "c"
+		) {
+			return;
+		}
+
+		event.preventDefault();
+		const choiceIndex = event.target.dataset.choiceIndex;
+		openConditionalText(
+			event.target,
+			choiceIndex === undefined ? "node" : "choice",
+			choiceIndex === undefined ? undefined : Number(choiceIndex),
+		);
+	}
+
+	function openConditionalText(
+		target: HTMLTextAreaElement,
+		kind: "node" | "choice",
+		choiceIndex?: number,
+	) {
+		conditionalTextTarget = {
+			kind,
+			choiceIndex,
+			start: target.selectionStart,
+			end: target.selectionEnd,
+		};
+		conditionalCondition = $dialogueConfig.conditionDefinitions[0] ?? "";
+		conditionalWhenTrue = "";
+		conditionalWhenFalse = "";
+		conditionalTextOpen = true;
+	}
+
+	function insertConditionalText() {
+		const target = conditionalTextTarget;
+		const condition = conditionalCondition.trim();
+		if (!target || !condition) return;
+
+		const conditionalText = `{&${condition} : '${conditionalWhenTrue.replaceAll("'", "\\'")}' ; '${conditionalWhenFalse.replaceAll("'", "\\'")}'}`;
+		const currentText =
+			target.kind === "node"
+				? String(data?.text ?? "")
+				: String(getChoices()[target.choiceIndex ?? 0]?.text ?? "");
+		const nextText =
+			currentText.slice(0, target.start) +
+			conditionalText +
+			currentText.slice(target.end);
+
+		if (target.kind === "node") updateNodeText(nextText);
+		else updateChoiceField(target.choiceIndex ?? 0, "text", nextText);
+		conditionalTextOpen = false;
+		conditionalTextTarget = null;
+	}
 </script>
 
 <NodeResizer
@@ -170,8 +251,10 @@
 <div class="node-card">
 	<div class="field">
 		<textarea
+			id="node-text"
 			class="text-input nodrag"
 			rows="3"
+			onkeydown={handleTextKeydown}
 			oninput={(e) =>
 				updateNodeText((e.target as HTMLTextAreaElement).value)}
 			placeholder="The NPC says...">{data?.text ?? ""}</textarea
@@ -186,7 +269,9 @@
 				<div class="choice-main">
 					<textarea
 						class="choice-text nodrag"
+						data-choice-index={i}
 						rows="1"
+						onkeydown={handleTextKeydown}
 						placeholder="Player line..."
 						value={choice.text}
 						oninput={(e) =>
@@ -340,6 +425,55 @@
 		{/if}
 	</div>
 
+	{#if conditionalTextOpen}
+		<div
+			class="conditional-editor nodrag"
+			role="dialog"
+			tabindex="-1"
+			aria-label="Insert conditional text"
+			onkeydown={handleTextKeydown}
+		>
+			<div class="conditional-editor-header">
+				<strong>Insert conditional text</strong>
+				<button
+					class="mini-btn nodrag"
+					type="button"
+					onclick={() => (conditionalTextOpen = false)}>×</button
+				>
+			</div>
+			<label>
+				Condition
+				<select class="nodrag" bind:value={conditionalCondition}>
+					{#if $dialogueConfig.conditionDefinitions.length === 0}
+						<option value="" disabled
+							>No conditions configured</option
+						>
+					{:else}
+						{#each $dialogueConfig.conditionDefinitions as condition}
+							<option value={condition}>{condition}</option>
+						{/each}
+					{/if}
+				</select>
+			</label>
+			<label>
+				When true
+				<input class="nodrag" bind:value={conditionalWhenTrue} />
+			</label>
+			<label>
+				When false
+				<input class="nodrag" bind:value={conditionalWhenFalse} />
+			</label>
+			<button
+				class="insert-confirm nodrag"
+				type="button"
+				onclick={insertConditionalText}
+				disabled={!conditionalCondition.trim()}
+			>
+				Insert conditional
+			</button>
+		</div>
+	{/if}
+
 	<Handle
 		type="target"
 		position={Position.Left}
@@ -353,7 +487,7 @@
 		width: 100%;
 		height: 100%;
 		box-sizing: border-box;
-		overflow: auto;
+		overflow: hidden;
 		background: rgb(15, 12, 19);
 		color: #f0f0f0;
 		border: 1px solid rgba(255, 255, 255, 0.1);
@@ -378,9 +512,16 @@
 			var(--xy-handle-border-color, var(--xy-handle-border-color-default));
 	}
 	.field {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
+	}
+	.conditional-editor-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
 	}
 	label {
 		font-size: 0.6rem;
@@ -406,6 +547,54 @@
 	.choice-text {
 		resize: vertical;
 		min-height: 2.2rem;
+	}
+	.insert-confirm {
+		background: rgba(65, 217, 146, 0.12);
+		color: #74d9a5;
+		border: 1px solid rgba(65, 217, 146, 0.28);
+		border-radius: 2px;
+		cursor: pointer;
+		font-size: 0.58rem;
+		padding: 0.2rem 0.4rem;
+		white-space: nowrap;
+	}
+	.insert-confirm:hover:not(:disabled) {
+		background: rgba(65, 217, 146, 0.22);
+	}
+	.insert-confirm:disabled {
+		cursor: not-allowed;
+		opacity: 0.45;
+	}
+	.conditional-editor {
+		position: absolute;
+		z-index: 5;
+		left: 0.75rem;
+		right: 0.75rem;
+		top: 0.75rem;
+		padding: 0.5rem;
+		background: #19151f;
+		border: 1px solid rgba(116, 217, 165, 0.35);
+		border-radius: 2px;
+		box-shadow: 0 5px 14px rgba(0, 0, 0, 0.4);
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+	.conditional-editor-header strong {
+		font-size: 0.62rem;
+		font-weight: 600;
+		color: #ddd;
+	}
+	.conditional-editor label {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+		color: #aaa;
+		font-size: 0.55rem;
+	}
+	.conditional-editor input {
+		padding: 0.3rem;
+		font-size: 0.62rem;
 	}
 	.text-input {
 		resize: vertical;

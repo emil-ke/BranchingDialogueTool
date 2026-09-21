@@ -401,8 +401,50 @@
 		return true;
 	}
 
-	function downloadJson(filename: string, value: unknown) {
-		const blob = new Blob([JSON.stringify(value, null, 4)], {
+	async function saveJson(filename: string, value: unknown) {
+		const json = JSON.stringify(value, null, 4);
+		const saveFilePicker = (
+			window as Window & {
+				showSaveFilePicker?: (options: {
+					suggestedName: string;
+					types: {
+						description: string;
+						accept: Record<string, string[]>;
+					}[];
+				}) => Promise<{
+					createWritable: () => Promise<{
+						write: (data: string) => Promise<void>;
+						close: () => Promise<void>;
+					}>;
+				}>;
+			}
+		).showSaveFilePicker;
+		if (saveFilePicker) {
+			try {
+				const handle = await saveFilePicker.call(window, {
+					suggestedName: filename,
+					types: [
+						{
+							description: "JSON file",
+							accept: { "application/json": [".json"] },
+						},
+					],
+				});
+				const writable = await handle.createWritable();
+				await writable.write(json);
+				await writable.close();
+				return;
+			} catch (error) {
+				if (
+					error instanceof DOMException &&
+					error.name === "AbortError"
+				)
+					return;
+				throw error;
+			}
+		}
+
+		const blob = new Blob([json], {
 			type: "application/json",
 		});
 		const url = URL.createObjectURL(blob);
@@ -410,11 +452,11 @@
 		anchor.href = url;
 		anchor.download = filename;
 		anchor.click();
-		URL.revokeObjectURL(url);
+		setTimeout(() => URL.revokeObjectURL(url), 0);
 	}
 
-	function exportConfig() {
-		downloadJson("dialogue-config.json", {
+	async function exportConfig() {
+		await saveJson("dialogue-config.json", {
 			traits: cleanDefinitions(traitDefinitions),
 			conditions: cleanDefinitions(conditionDefinitions),
 		});
@@ -460,7 +502,7 @@
 		input.click();
 	}
 
-	function exportDialogue() {
+	async function exportDialogue() {
 		const connectedNodeIds = new Set<string>();
 		for (const edge of edges) {
 			connectedNodeIds.add(edge.source);
@@ -507,14 +549,7 @@
 			}
 			result.nodes[name] = nodeObj;
 		}
-		const json = JSON.stringify(result, null, 4);
-		const blob = new Blob([json], { type: "application/json" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = "dialogue.json";
-		a.click();
-		URL.revokeObjectURL(url);
+		await saveJson("dialogue.json", result);
 	}
 
 	function importDialogue() {
